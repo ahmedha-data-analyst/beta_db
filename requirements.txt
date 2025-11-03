@@ -14,9 +14,9 @@ pyarrow==14.0.2           # Parquet file support
 
 # Optional Performance Enhancements
 # Uncomment if needed for larger datasets or faster processing
-dask==2023.12.1         # Parallel computing for large datasets
-numba==0.58.1           # JIT compilation for faster calculations
-fastparquet==2023.10.1  # Alternative parquet reader
+# dask==2023.12.1         # Parallel computing for large datasets
+# numba==0.58.1           # JIT compilation for faster calculations
+# fastparquet==2023.10.1  # Alternative parquet reader
 
 # Additional Utilities (optional)
 # scipy==1.11.4           # Scientific computing (for advanced statistics)

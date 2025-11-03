@@ -7,11 +7,10 @@
 
 # Core Dependencies
 streamlit==1.32.0
-pandas==2.1.2
-numpy==1.26.0
+pandas==2.1.4
+numpy==1.26.2
 plotly==5.18.0
-pyarrow==14.0.0
-
+pyarrow==14.0.2  # Parquet backend used by pandas.read_parquet
 
 # Optional Performance Enhancements
 # Uncomment if needed for larger datasets or faster processing

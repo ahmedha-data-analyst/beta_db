@@ -318,24 +318,20 @@ def format_number(num):
 def load_data():
     """
     Loads the water quality data with caching for performance.
-    
     Returns:
         pandas DataFrame with the water quality data
     """
+    import polars as pl
     try:
-        # Load the main dataset
-        df = pd.read_parquet('ea_26_years_beta_only.parquet')
-        
+        # Load the main dataset using Polars, then convert to pandas
+        df = pl.read_parquet('ea_26_years_beta_only.parquet').to_pandas()
         # Ensure datetime column is properly formatted
         df['Date'] = pd.to_datetime(df['Date'])
-        
         # Add YearMonth if not present
         if 'YearMonth' not in df.columns:
             df['YearMonth'] = df['Date'].dt.to_period('M')
-        
         # Add Region column based on coordinates
         df['Region'] = df.apply(lambda row: assign_region(row['Latitude'], row['Longitude']), axis=1)
-        
         return df
     except FileNotFoundError:
         st.error("Data file 'ea_26_years_beta_only.parquet' not found!")
@@ -348,20 +344,14 @@ def load_data():
 def get_parameter_list(df):
     """
     Gets unique parameters and categorizes them.
-    
     Returns:
         Dictionary with categorized parameters
     """
     all_params = df['Parameter'].unique()
-    
-    # Combine metals and nutrients as "Analytes"
     analytes = []
     physical = []
-    
     for param in all_params:
         param_lower = param.lower()
-        
-        # Check if it's a metal
         is_analyte = False
         for metal in METALS_OF_INTEREST:
             if metal.lower() in param_lower:
@@ -369,8 +359,6 @@ def get_parameter_list(df):
                     analytes.append(param)
                 is_analyte = True
                 break
-        
-        # Check if it's a nutrient/chemical
         if not is_analyte:
             for nutrient in NUTRIENTS_CHEMICALS:
                 if nutrient.lower() in param_lower:
@@ -378,8 +366,6 @@ def get_parameter_list(df):
                         analytes.append(param)
                     is_analyte = True
                     break
-        
-        # Check if it's physical chemistry
         if not is_analyte:
             if 'ph' == param_lower:
                 physical.append(param)
@@ -389,107 +375,75 @@ def get_parameter_list(df):
                 physical.append(param)
             elif 'turbidity' in param_lower:
                 physical.append(param)
-    
     return {
         'analytes': sorted(analytes),
         'physical': sorted(physical),
         'all': sorted(all_params)
     }
 
-# ============================================================================
+# =========================================================================
 # DATA ANALYSIS FUNCTIONS - Process and analyze the data
-# ============================================================================
+# =========================================================================
 
 @st.cache_data(show_spinner=False)
 def get_top_sampling_points(df, selected_param, n=10, regions=None):
     """
     Identifies the top N sampling points with highest concentrations.
     Now properly filters to get top N from selected regions only.
-    
     Args:
         df: Filtered dataframe
         selected_param: Parameter to analyze
         n: Number of top points to return
         regions: List of regions to include (None or contains 'All' = all regions)
-    
     Returns:
         DataFrame with top sampling points
     """
-    # Filter data for selected parameter
     param_data = df[df['Parameter'] == selected_param].copy()
-    
     if param_data.empty:
         return pd.DataFrame()
-    
-    # Filter by regions BEFORE finding top sites
     if regions and len(regions) > 0 and 'All' not in regions:
-        # Only include data from selected regions
         param_data = param_data[param_data['Region'].isin(regions)]
-    
     if param_data.empty:
         return pd.DataFrame()
-    
-    # Group by sampling point and calculate statistics
     grouped = param_data.groupby(['Sampling Point', 'Water_Source', 'Latitude', 'Longitude', 'Region']).agg({
         'result': ['mean', 'median', 'std', 'count', 'max']
     }).reset_index()
-    
-    # Flatten column names
     grouped.columns = ['Sampling Point', 'Water_Source', 'Latitude', 'Longitude', 'Region',
                        'Mean_Concentration', 'Median_Concentration', 'Std_Dev', 'Sample_Count', 'Max_Concentration']
-    
-    # Filter for statistical significance (at least 10 measurements)
     grouped = grouped[grouped['Sample_Count'] >= 10]
-    
-    # Sort by mean concentration and get top N
     top_points = grouped.nlargest(n, 'Mean_Concentration')
-    
-    # Add ranking for visualization
     top_points['Rank'] = range(1, len(top_points) + 1)
-    
     return top_points
 
 @st.cache_data(show_spinner=False)
 def get_top_sites_temporal_data(df, selected_param, top_sites_df):
     """
     Gets temporal data for the top sampling sites.
-    
     Args:
         df: Full dataframe
         selected_param: Selected parameter
         top_sites_df: DataFrame with top sampling sites
-    
     Returns:
         DataFrame with temporal data for top sites
     """
     if top_sites_df.empty:
         return pd.DataFrame()
-    
-    # Get list of top sampling points
     top_sites = top_sites_df['Sampling Point'].tolist()
-    
-    # Filter data for selected parameter and top sites
     temporal_data = df[(df['Parameter'] == selected_param) & 
                        (df['Sampling Point'].isin(top_sites))].copy()
-    
     if temporal_data.empty:
         return pd.DataFrame()
-    
-    # Sort by date for proper time series
     temporal_data = temporal_data.sort_values('Date')
-    
     return temporal_data
 
 @st.cache_data(show_spinner=False)
 def get_time_series_data(df, selected_param, aggregation='monthly'):
     """
     Prepares time series data for visualization.
-    
     Args:
         df: Filtered dataframe
         selected_param: Parameter to analyze
         aggregation: 'monthly' or 'yearly'
-    
     Returns:
         DataFrame with time series data
     """

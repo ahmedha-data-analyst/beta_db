@@ -16,7 +16,8 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, date
+from datetime import datetime
+import polars as pl
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -28,7 +29,7 @@ warnings.filterwarnings('ignore')
 # PAGE SETTINGS - Change these to customize the app appearance
 # ---------------------------------------------------------------------
 PAGE_TITLE = "UK Water Quality Dashboard - HydroStar"
-PAGE_ICON = "logo.png"  # You can use any emoji or path to an icon file
+PAGE_ICON = "logo.png"  # Using emoji for deployment reliability
 LAYOUT = "wide"  # Options: "wide" or "centered"
 
 # ---------------------------------------------------------------------
@@ -321,9 +322,8 @@ def load_data():
     Returns:
         pandas DataFrame with the water quality data
     """
-    import polars as pl
     try:
-        # Load the main dataset using Polars, then convert to pandas
+        # Load via Polars (no Arrow build), then to pandas
         df = pl.read_parquet('ea_26_years_beta_only.parquet').to_pandas()
         # Ensure datetime column is properly formatted
         df['Date'] = pd.to_datetime(df['Date'])
@@ -879,14 +879,12 @@ def main():
     # ------------------------------------------------------------------------
     col1, col2 = st.columns([4, 1])
     with col1:
-        st.title("Beta Water Quality    Dashboard")
+        st.title("Beta Water Quality Dashboard")
         st.markdown("**HydroStar Europe Ltd.**")
         st.markdown("*26 Years of Environmental Monitoring Data (2000-2025)*")
     with col2:
-        try:
-            st.image("logo.png", width=150)
-        except:
-            st.markdown("### ⭐ HYDROSTAR")
+        # Using emoji for better deployment reliability
+        st.markdown("### ⭐ HYDROSTAR")
     
     st.markdown("---")
     
@@ -1239,123 +1237,6 @@ def main():
             
             st.markdown("---")
             
-    #         # ================================================================
-    #         # ECONOMIC VALUE ASSESSMENT (for analytes)
-    #         # ================================================================
-    #         if param_type == "Analytes" and not top_points.empty:
-    #             st.header("Economic Value Assessment")
-                
-    #             col1, col2, col3 = st.columns(3)
-                
-    #             with col1:
-    #                 st.info("**Extraction Potential**")
-    #                 # Calculate potential based on concentrations
-    #                 high_conc_sites = len(top_points[top_points['Mean_Concentration'] > 10])
-    #                 st.metric("High Concentration Sites", high_conc_sites)
-                
-    #             with col2:
-    #                 st.success("**Resource Recovery Sites**")
-    #                 # Total samples from top sites
-    #                 recovery_potential = top_points['Sample_Count'].sum()
-    #                 st.metric("Total Samples Analyzed", format_number(recovery_potential))
-                
-    #             with col3:
-    #                 st.warning("**Regional Coverage**")
-    #                 # Show unique regions in top sites
-    #                 unique_regions = top_points['Region'].nunique()
-    #                 regions_text = ", ".join(top_points['Region'].unique()[:5])
-    #                 st.metric("Regions Represented", unique_regions)
-    #                 st.caption(regions_text)
-            
-    #         st.markdown("---")
-            
-    #         # ================================================================
-    #         # DATA EXPORT SECTION
-    #         # ================================================================
-    #         with st.expander("Export Data"):
-    #             st.subheader("Download Analysis Results")
-                
-    #             col1, col2, col3 = st.columns(3)
-                
-    #             with col1:
-    #                 # Prepare filtered data for export
-    #                 export_data = param_data_regional[['Sampling Point', 'Water_Source', 'Date', 
-    #                                                   'Parameter', 'result', 'Measurement_Unit',
-    #                                                   'Latitude', 'Longitude', 'Region']].copy()
-    #                 export_data['Date'] = export_data['Date'].dt.strftime('%Y-%m-%d')
-                    
-    #                 csv = export_data.to_csv(index=False)
-    #                 st.download_button(
-    #                     label="Download All Filtered Data (CSV)",
-    #                     data=csv,
-    #                     file_name=f"hydrostar_{selected_param}_{datetime.now().strftime('%Y%m%d')}.csv",
-    #                     mime="text/csv"
-    #                 )
-                
-    #             with col2:
-    #                 if not top_points.empty:
-    #                     # Export top sites
-    #                     top_sites_csv = top_points.to_csv(index=False)
-    #                     st.download_button(
-    #                         label="Download Top Sites (CSV)",
-    #                         data=top_sites_csv,
-    #                         file_name=f"hydrostar_top_sites_{selected_param}_{datetime.now().strftime('%Y%m%d')}.csv",
-    #                         mime="text/csv"
-    #                     )
-                
-    #             with col3:
-    #                 if 'temporal_data' in locals() and not temporal_data.empty:
-    #                     # Export temporal data
-    #                     temporal_export = temporal_data[['Sampling Point', 'Date', 'result']].copy()
-    #                     temporal_export['Date'] = temporal_export['Date'].dt.strftime('%Y-%m-%d')
-    #                     temporal_csv = temporal_export.to_csv(index=False)
-    #                     st.download_button(
-    #                         label="Download Temporal Data (CSV)",
-    #                         data=temporal_csv,
-    #                         file_name=f"hydrostar_temporal_{selected_param}_{datetime.now().strftime('%Y%m%d')}.csv",
-    #                         mime="text/csv"
-    #                     )
-    #     else:
-    #         st.warning("No data available for the selected parameter and filters. Please adjust your selection.")
-    # else:
-    #     # No parameter selected - show instructions
-    #     st.info("Please select a parameter from the sidebar to begin analysis.")
-        
-    #     # Show dataset overview
-    #     st.header("Dataset Overview")
-        
-    #     col1, col2, col3, col4 = st.columns(4)
-        
-    #     with col1:
-    #         st.metric("Total Records", format_number(len(df)))
-    #     with col2:
-    #         st.metric("Sampling Points", format_number(df['Sampling Point'].nunique()))
-    #     with col3:
-    #         st.metric("Parameters", df['Parameter'].nunique())
-    #     with col4:
-    #         st.metric("Years of Data", f"{df['Date'].dt.year.max() - df['Date'].dt.year.min() + 1}")
-        
-    #     # Show available parameters by category
-    #     st.subheader("Available Parameters")
-        
-    #     col1, col2 = st.columns(2)
-        
-    #     with col1:
-    #         st.markdown("**Analytes (Metals & Chemicals)**")
-    #         st.write(f"{len(params_dict['analytes'])} parameters available")
-    #         with st.expander("View Analytes List"):
-    #             for param in params_dict['analytes'][:20]:
-    #                 st.write(f"• {param}")
-    #             if len(params_dict['analytes']) > 20:
-    #                 st.write(f"... and {len(params_dict['analytes']) - 20} more")
-        
-    #     with col2:
-    #         st.markdown("**Physical Chemistry**")
-    #         st.write(f"{len(params_dict['physical'])} parameters available")
-    #         with st.expander("View Physical Parameters"):
-    #             for param in params_dict['physical']:
-    #                 st.write(f"• {param}")
-    
     # ------------------------------------------------------------------------
     # FOOTER - Copyright and information
     # ------------------------------------------------------------------------

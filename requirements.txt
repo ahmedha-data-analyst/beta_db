@@ -6,11 +6,12 @@
 # ============================================================================
 
 # Core Dependencies
-streamlit==1.32.0          # Main dashboard framework
-pandas==2.1.4             # Data manipulation and analysis
-numpy==1.26.2             # Numerical computing
-plotly==5.18.0            # Interactive visualizations
-pyarrow==14.0.2           # Parquet file support
+streamlit==1.32.0
+pandas==2.1.2
+numpy==1.26.0
+plotly==5.18.0
+pyarrow==14.0.0
+
 
 # Optional Performance Enhancements
 # Uncomment if needed for larger datasets or faster processing
